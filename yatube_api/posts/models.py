@@ -27,10 +27,13 @@ class Post(models.Model):
         related_name='posts', blank=True, null=True
     )
 
+    class Meta:
+        ordering = ('-pub_date',)
+
     def __str__(self):
         return (
-            f'{self.text[:LOOK_LEN_TXT]} {self.pub_date} {self.author}'
-            f'{self.group}'
+            f'{self.text[:LOOK_LEN_TXT]=} {self.pub_date=} {self.author=}'
+            f'{self.group=}'
         )
 
 

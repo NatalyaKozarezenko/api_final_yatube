@@ -19,9 +19,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'api',
-    'posts',
     'djoser',
+    'posts',
+    'api',
 ]
 
 MIDDLEWARE = [
@@ -81,7 +81,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LOOK_LEN_TXT = 25
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ru-RU'
 
 TIME_ZONE = 'UTC'
 

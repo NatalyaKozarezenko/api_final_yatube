@@ -1,18 +1,7 @@
-import base64
-from django.core.files.base import ContentFile
 from rest_framework import serializers
-from rest_framework.relations import SlugRelatedField
+from rest_framework.validators import UniqueTogetherValidator
 
 from posts.models import Follow, Group, Comment, Post, User
-
-
-class Base64ImageField(serializers.ImageField):
-    def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
-            data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
-        return super().to_internal_value(data)
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -23,8 +12,9 @@ class GroupSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
-    author = SlugRelatedField(slug_field='username', read_only=True)
-    image = Base64ImageField(required=False, allow_null=True)
+    author = serializers.SlugRelatedField(
+        read_only=True, slug_field='username'
+    )
 
     class Meta:
         model = Post
@@ -43,7 +33,11 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class FollowSerializer(serializers.ModelSerializer):
-    user = serializers.SlugRelatedField(read_only=True, slug_field='username')
+    user = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='username',
+        default=serializers.CurrentUserDefault()
+    )
     following = serializers.SlugRelatedField(
         slug_field='username',
         queryset=User.objects.all()
@@ -52,26 +46,16 @@ class FollowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Follow
         fields = ('user', 'following')
-        validators = []
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Follow.objects.all(),
+                fields=('user', 'following'),
+                message='Вы уже подписаны!'
+            )]
 
-    def get_user(self):
-        return self.context['request'].user
-
-    def validate(self, attrs):
-        if Follow.objects.filter(
-            user=self.get_user(),
-            following=attrs['following']
-        ).exists():
-            raise serializers.ValidationError('Вы уже подписаны!')
-
-        if self.get_user() == attrs['following']:
+    def validate_following(self, value):
+        if self.context['request'].user == value:
             raise serializers.ValidationError(
                 'Нельзя подписаться на самого себя!'
             )
-        return attrs
-
-    def create(self, validated_data):
-        return Follow.objects.create(
-            user=self.get_user(),
-            following=validated_data['following']
-        )
+        return value
